@@ -50,5 +50,9 @@ import uos; uos.remove('main.py')
 
 For upload files install ampy: https://github.com/scientifichackers/ampy
 
-
+#ToDo
+ - integrate micropython-mcron into micropython lib 
+ - fix COMMAND EXCEPTION
+ - make socket server more reliable
+ - add support POST request
 
