@@ -55,4 +55,6 @@ For upload files install ampy: https://github.com/scientifichackers/ampy
  - fix COMMAND EXCEPTION
  - make socket server more reliable
  - add support POST request
+ - add check for WiFi.waitForConnectResult 
+ - set timeout WiFi.setAutoConnect(true) and WiFi.setAutoReconnect(true).
 
