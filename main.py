@@ -9,6 +9,7 @@ import ntptime
 from suntime import Sun, SunTimeException
 import socket
 import sys
+import re
 
 today_sr = None
 today_ss = None
@@ -130,7 +131,8 @@ async def web_page(request):
         auto_run_flag = False
         Read_Sensor()
     elif request.find('POST /set_point_temp') > 0:
-        set_point = request.form.get("temp", "")
+        headers = request.split('\n')
+        set_point = request.get("temp", "")
         fan_state = str(set_point)
         print("Fan_state", set_point)
         auto_run_flag = False
