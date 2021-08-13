@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hydroponic WEB</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:,">
+    <style>
+        html {
+            font-family: Helvetica;
+            display: inline-block;
+            margin: 0px auto;
+            text-align: center;
+        }
+
+        h1 {
+            color: #0F3376;
+            padding: 2vh;
+        }
+
+        p {
+            font-size: 1.5rem;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #33c080;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            text-decoration: none;
+            font-size: 30px;
+            width: 100%
+        }
+
+        .button2 {
+            background-color: #4286f4;
+            width: 30%
+        }
+
+        .button3 {
+            background-color: #eb2b10;
+            width: 30%
+        }
+
+        .button4 {
+            background-color: #8386f4;
+            width: 44%
+        }
+    </style>
+</head>
+<body>
+    <h1>Hydroponic</h1>
+    <p>Currently temperature : <strong>""" + str(cur_temp) + """</strong></p>
+    <p>Status Lamp : <strong>""" + Lamp_state + """</strong></p>
+    <p>Status Fan : <strong>""" + Fan_state + """</strong></p>
+    <p>Today SunRise : <strong>""" + str(today_sr[3]) + """:""" + str(today_sr[4]) + """</strong></p>
+    <p>Today SunSet : <strong>""" + str(today_ss[3]) + """:""" + str(today_ss[4]) + """</strong></p>
+    <p>SetPoint temperature : <strong>""" + str(SetPoint_temp) + """</strong></p>
+
+    <form action="/set_point_temp"  method="post">
+        <label for="SetPoint_temp">Set Point temperature:</label><br>
+        <input type="number" id="SetPoint_temp" name="temp" value=""" + str(SetPoint_temp) + """ /><br><br>
+        <input type="submit" value="Submit">
+    </form>
+    <br>
+    <p>
+        <input class="button button2" type="button" value="OFF Lamp" onclick="location.href='/?offlamp';">
+        <input class="button button3" type="button" value="ON Lamp" onclick="location.href='/?onlamp';">
+    </p>
+    <p>
+        <input class="button button2" type="button" value="OFF Fan" onclick="location.href='/?offfan';">
+        <input class="button button3" type="button" value="ON Fan" onclick="location.href='/?onfan';">
+    </p>
+</body>
+</html>
