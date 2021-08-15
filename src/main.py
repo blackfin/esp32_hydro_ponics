@@ -13,8 +13,20 @@ import re
 import gc
 import micropython
 
+today_sr = None
+today_ss = None
+cur_temp = None
+set_point_temp = 30
+Fan_prev = 0
+rtc = RTC()
+Lamp = Pin(14, Pin.OUT)  # выход на лампы
+ds_pin = Pin(4)  # подключение ds18x20
+Fan = Pin(15, Pin.OUT)  # выход на вентилятор
 led = Pin(2, Pin.OUT)  # выход на светодиод для индикации работы программы
 SEND_BUFSZ = 128
+lamp_state = "OFF"
+fan_state = "OFF"
+global auto_run_flag, nSP
 
 
 async def killer(duration):
@@ -35,16 +47,42 @@ async def main(duration, blinked):
     asyncio.run(killer(duration))
 
 
+# Взятие времени с ntp сервера, парсинг данных
+def sync_time(callback_id, current_time, callback_memory):
+    ntptime.settime()  # set the rtc datetime from the remote server
+    rtc.datetime()  # get the date and time in UTC
+    global today_sr, today_ss
+    latitude = 54.58  # Установка широты для Омска
+    longitude = 73.23  # Установка долготы для Омска
+    sun = Sun(latitude, longitude, 6)  # Вычисление солнца с учетом +6 пояса
+    # Get today's sunrise and sunset in UTC
+    today_sr = sun.get_sunrise_time()
+    today_ss = sun.get_sunset_time()
+    print("Time synchronization was successful! Sunrise today %s:%s, sunset today %s:%s" % (
+        today_sr[3], today_sr[4], today_ss[3], today_ss[4]))
+    return today_sr, today_ss
+
+
+def Read_Sensor():
+    global cur_temp
+
+    ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
+    roms = ds_sensor.scan()
+    ds_sensor.convert_temp()
+    #    print ('Currently temp: ', ds_sensor.read_temp(roms[0]))
+    cur_temp = ds_sensor.read_temp(roms[0])
+
+
 def handle(reader, writer):
     # micropython.mem_info()
     close = True
-    req = None
     try:
         request_line = yield from reader.readline()
 
         if request_line == b"":
             yield from writer.aclose()
             return
+
         request_line = request_line.decode()
         method, path, proto = request_line.split()
 
@@ -55,31 +93,57 @@ def handle(reader, writer):
         else:
             size = 0
 
-        data = yield from reader.readexactly(size)
-
-        form = parse_qs(data.decode())
+        if len(path) > 1:
+            data = yield from reader.readexactly(size)
+            form = parse_qs(data.decode())
+        else:
+            data = b''
+            form = {}
 
         path = path.split("?", 1)
         qs = ""
         if len(path) > 1:
             qs = path[1]
         path = path[0]
-        print('%.3f %s %s "%s %s" "%s %s"' % (utime.time(), headers, size, data, form, method, path))
+        print('%.3f %s %s "%s %s" "%s %s %s"' % (utime.time(), headers, size, data, form, method, path, qs))
+        print("method %s", method)
         if method == "POST":
-            print("method %s", method)
             yield from start_response(writer)
             yield from writer.awrite(web_page())
-            temp = form["temp"]
-            print("Temperature for setting:", temp)
-
+            set_point_temp = form["temp"]  # temperature from POST request
+            print("Temperature for setting:", set_point_temp)
+            fan_state = str(set_point_temp)
+            auto_run_flag = False
+            Read_Sensor()
         else:  # GET, apparently
             # Note: parse_qs() is not a coroutine, but a normal function.
             # But you can call it using yield from too.
-            print("method %s", method)
-            yield from start_response(writer, status="200")
-            #yield from writer.awrite("404\r\n")
-            yield from writer.awrite(web_page())
+            print("request path %s", path)
+            if not qs:
+                yield from start_response(writer, status="200")
+                yield from writer.awrite(web_page())
+                return
 
+            print("query string %s", qs)
+            if qs == 'offlamp':
+                lamp_state = "off lamp"
+                auto_run_flag = False
+                Read_Sensor()
+            elif qs == 'onlamp':
+                lamp_state = "on lamp"
+                auto_run_flag = False
+                Read_Sensor()
+            elif qs == 'offfan':
+                fan_state = "off fan"
+                auto_run_flag = False
+                Read_Sensor()
+            elif qs == 'onfan':
+                fan_state = "on fan"
+                auto_run_flag = False
+                Read_Sensor()
+            print("settings %s %s %s", fan_state, auto_run_flag, lamp_state)
+            yield from start_response(writer, status="200")
+            yield from writer.awrite(web_page())
     except Exception as e:
         print("Error", e.__class__, "occurred.")
 
@@ -200,16 +264,16 @@ def web_page():
     </head>
     <body>
     <h1>Hydroponic</h1>
-    <p>Currently temperature : <strong>""" + str(22) + """</strong></p>
-    <p>Status Lamp : <strong>""" + "Off" + """</strong></p>
-    <p>Status Fan : <strong>""" + "Off" + """</strong></p>
-    <p>Today SunRise : <strong>""" + str(1) + """:""" + str(2) + """</strong></p>
-    <p>Today SunSet : <strong>""" + str(3) + """:""" + str(4) + """</strong></p>
-    <p>SetPoint temperature : <strong>""" + str(15) + """</strong></p>
+    <p>Currently temperature : <strong>""" + str(cur_temp) + """</strong></p>
+    <p>Status Lamp : <strong>""" + lamp_state + """</strong></p>
+    <p>Status Fan : <strong>""" + fan_state + """</strong></p>
+    <p>Today SunRise : <strong>""" + str(today_sr[3]) + """:""" + str(2) + """</strong></p>
+    <p>Today SunSet : <strong>""" + str(today_ss[3]) + """:""" + str(4) + """</strong></p>
+    <p>SetPoint temperature : <strong>""" + str(set_point_temp) + """</strong></p>
 
     <form action="/set_point_temp"  method="POST">
         <label for="set_point_temp">Set Point temperature:</label><br>
-        <input type="number" id="set_point_temp" name="temp" value=""" + str(15) + """ /><br><br>
+        <input type="number" id="set_point_temp" name="temp" value=""" + str(set_point_temp) + """ /><br><br>
         <input type="submit" value="Submit">
     </form>
     <br>
@@ -239,6 +303,8 @@ def test(duration=10):
     print('ip:', ip)
     # create looped tasks
     gc.collect()
+    sync_time(1, 2, 3)
+    mcron.init_timer()
     try:
         loop = asyncio.get_event_loop()
         # loop.create_task(main(duration, led))  # Запланировать как можно скорее
