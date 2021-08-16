@@ -46,6 +46,7 @@ import uos; uos.remove('main.py')
 For upload files install ampy: https://github.com/scientifichackers/ampy
 ```
 ampy --port /dev/ttyUSB0 put board_boot.py /boot.py
+ampy --port /dev/ttyUSB0 put ./src/main.py  /main.py
 ```
 More info: https://learn.adafruit.com/micropython-basics-load-files-and-run-code/file-operations
 
