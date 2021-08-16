@@ -1,12 +1,21 @@
 # esp32_hydro_ponics
+
+On host PC:
+```
+sudo adduser myusername dialout (requires reboot)
+sudo apt-get install picocom
+
 sudo apt-get install python3-pip
 pip3 install esptool
 pip3 install pyserial
 
 sudo usermod -a -G tty yourname
-
+```
+Erase flash on board. In host PC terminal execute
+```
 esptool.py --chip esp32 --port /dev/ttyUSB0 erase_flash
-
+```
+In terminal should see:
 ````
 bat@nico:~/esp32/micropython-example$ esptool.py --chip esp32 --port /dev/ttyUSB0 erase_flash
 esptool.py v3.1
@@ -24,16 +33,17 @@ Chip erase completed successfully in 15.8s
 Hard resetting via RTS pin...
 ````
 
-From then on program the firmware starting at address 0x1000:
+Flashing micropython firmware starting at address 0x1000:
 ```
 esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 460800 write_flash -z 0x1000 esp32-20190125-v1.10.bin
-picocom -b 115200 /dev/ttyUSB0
 ```
-On host PC:
+Ok, the board is prepare.
+For upload files install ampy: https://github.com/scientifichackers/ampy
 ```
-sudo adduser myusername dialout (requires reboot)
-sudo apt-get install picocom
+ampy --port /dev/ttyUSB0 put board_boot.py /boot.py
+ampy --port /dev/ttyUSB0 put ./src/main.py  /main.py
 ```
+More info: https://learn.adafruit.com/micropython-basics-load-files-and-run-code/file-operations
 
 In case esp32 hung or not responded thru web interface:
 ```
@@ -43,12 +53,7 @@ use CTRL-C to break, CTRL-D for soft reboot. Go to REPL and execute:
 ```
 import uos; uos.remove('main.py')
 ```
-For upload files install ampy: https://github.com/scientifichackers/ampy
-```
-ampy --port /dev/ttyUSB0 put board_boot.py /boot.py
-ampy --port /dev/ttyUSB0 put ./src/main.py  /main.py
-```
-More info: https://learn.adafruit.com/micropython-basics-load-files-and-run-code/file-operations
+Fix main.py and reupload.
 
 #ToDo
  - fix COMMAND EXCEPTION
