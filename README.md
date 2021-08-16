@@ -25,39 +25,32 @@ Hard resetting via RTS pin...
 ````
 
 From then on program the firmware starting at address 0x1000:
-
-
+```
 esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 460800 write_flash -z 0x1000 esp32-20190125-v1.10.bin
-
 picocom -b 115200 /dev/ttyUSB0
-
-
+```
+On host PC:
+```
 sudo adduser myusername dialout (requires reboot)
 sudo apt-get install picocom
+```
 
+In case esp32 hung or not responded thru web interface:
+```
 picocom -b 115200 /dev/ttyUSB0
-use CTRL-A plus CTRL-X to exit
-
-python prompt:  use CTRL-C to break, CTRL-D for soft reboot
-
-
-Installing to: /lib/
-Warning: micropython.org SSL certificate is not validated
-Installing micropython-mcron 1.1.0 from https://files.pythonhosted.org/packages/0b/3f/a4001776e41541a5cab2eba457c6f81416c6381818adf8b6b71b91abc376/micropython-mcron-1.1.0.tar.gz
-
-In case esp32 hung
-picocom -b 115200 /dev/ttyUSB0
-then go to repl and execute
+```
+use CTRL-C to break, CTRL-D for soft reboot. Go to REPL and execute:
+```
 import uos; uos.remove('main.py')
-
+```
 For upload files install ampy: https://github.com/scientifichackers/ampy
+```
 ampy --port /dev/ttyUSB0 put board_boot.py /boot.py
+```
+More info: https://learn.adafruit.com/micropython-basics-load-files-and-run-code/file-operations
 
 #ToDo
- - integrate micropython-mcron into micropython lib 
  - fix COMMAND EXCEPTION
- - make socket server more reliable
- - add support POST request
  - add check for WiFi.waitForConnectResult 
  - set timeout WiFi.setAutoConnect(true) and WiFi.setAutoReconnect(true).
 
